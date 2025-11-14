@@ -1,4 +1,4 @@
-module github.com/sealdice/dicescript
+module github.com/kagangtuya-star/dicescript
 
 go 1.18
 
