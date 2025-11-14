@@ -31,6 +31,39 @@ https://sealdice.github.io/dicescript/
 
 你可以从这里了解如何使用DiceScript进行骰点，编写自己的TRPG规则，以及如何嵌入到任何你想要的地方。
 
+### 在其他Go项目中快速调用
+
+现在可以通过 `EvalDice` 将 DiceScript 作为普通函数嵌入到任意 Go 项目：
+
+```go
+package main
+
+import (
+    "fmt"
+
+    ds "github.com/sealdice/dicescript"
+)
+
+func main() {
+    result, err := ds.EvalDice("2d6+1")
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("过程:", result.Detail)
+    fmt.Println("结果:", result.ValueText)
+}
+```
+
+如需注册自定义骰子或调整配置，可通过可选参数扩展：
+
+```go
+result, err := ds.EvalDice("E5", func(ctx *ds.Context) error {
+    return ctx.RegCustomDice(`E(\d+)`, func(ctx *ds.Context, groups []string, _ any) (*ds.VMValue, string, error) {
+        return ds.NewIntVal(42), "custom:E", nil
+    })
+})
+```
+
 ### 进阶·不修改代码的情况下进行语法扩展:
 
 [自定义骰点语法使用指南(流式解析)](./docs/CustomDiceParser.md)
