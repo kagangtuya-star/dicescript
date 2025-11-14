@@ -8,7 +8,7 @@ import (
 	//"strconv"
 
 	"github.com/gopherjs/gopherjs/js"
-	ds "github.com/sealdice/dicescript"
+	ds "github.com/kagangtuya-star/dicescript"
 )
 
 var scope = map[string]*ds.VMValue{}

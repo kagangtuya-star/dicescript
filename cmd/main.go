@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	ds "github.com/kagangtuya-star/dicescript"
 	"github.com/peterh/liner"
-	ds "github.com/sealdice/dicescript"
 )
 
 var (

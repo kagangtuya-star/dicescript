@@ -22,7 +22,7 @@ jobs:
         go mod download golang.org/x/exp
 
     - name: Build
-      run: gopherjs build -m -o jsport/dicescript.cjs github.com/sealdice/dicescript/jsport
+      run: gopherjs build -m -o jsport/dicescript.cjs github.com/kagangtuya-star/dicescript/jsport
 
     - name: Bundle ESM
       run: cd ./jsport && yarn && yarn build

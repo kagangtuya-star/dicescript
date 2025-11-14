@@ -16,7 +16,7 @@ declare interface GoError {
 }
 
 declare interface ValueMap {
-  $type: 'github.com/sealdice/dicescript.*ValueMap';
+  $type: 'github.com/kagangtuya-star/dicescript.*ValueMap';
 
   Load(key: string): [VMValue | null, boolean];
   MustLoad(key: string): VMValue | null;
@@ -36,7 +36,7 @@ declare interface ValueMap {
 }
 
 declare interface VMValue {
-  $type: 'github.com/sealdice/dicescript.*VMValue';
+  $type: 'github.com/kagangtuya-star/dicescript.*VMValue';
 
   ToJSONRaw(save: Map<VMValue, boolean>): [Uint8Array, GoError];
   ToJSON(): [Uint8Array, GoError];
@@ -131,7 +131,7 @@ declare interface RollConfig {
 
 
 export declare interface DiceScriptContext {
-  $type: 'github.com/sealdice/dicescript.*Context';
+  $type: 'github.com/kagangtuya-star/dicescript.*Context';
 
   RunExpr(value: string): VMValue | undefined;
   /** Eval a code, store result in ctx.Ret, store error in ctx.Error */
