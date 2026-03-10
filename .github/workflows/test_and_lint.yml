@@ -1,8 +1,15 @@
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
 
 name: Test & Lint
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -20,10 +27,8 @@ jobs:
 
       # https://blog.jetbrains.com/go/2019/04/03/profiling-go-applications-and-tests/
       - run: go test -v -bench=^BenchmarkInBoundsChannels$ -cpuprofile=cpu.out -memprofile mem.out .
-      # 第一遍是冷启动，再进行一次测试
-      - run: go test -v . -count=1
-      - run: go test -v . -count=1
-      - run: go test -v . -count=1
+      - name: Go test
+        run: go test -v ./...
 
       - name: Upload
         uses: actions/upload-artifact@v4
