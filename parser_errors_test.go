@@ -148,6 +148,26 @@ func TestLanguageOptions_Bilingual(t *testing.T) {
 	}
 }
 
+func TestParseErrorFormatterOptionIsParserScoped(t *testing.T) {
+	pChinese := newParser("", []byte("/"), parseErrorFormatterOption(ParseErrorLanguageChinese))
+	if assert.NotNil(t, pChinese.noMatchErrorFormatter) {
+		err := pChinese.noMatchErrorFormatter(position{line: 1, col: 1, offset: 0}, []byte("/"), []string{"expr"})
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "语法错误")
+			assert.NotContains(t, err.Error(), "Syntax Error")
+		}
+	}
+
+	pEnglish := newParser("", []byte("/"), parseErrorFormatterOption(ParseErrorLanguageEnglish))
+	if assert.NotNil(t, pEnglish.noMatchErrorFormatter) {
+		err := pEnglish.noMatchErrorFormatter(position{line: 1, col: 1, offset: 0}, []byte("/"), []string{"expr"})
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "Syntax Error")
+			assert.NotContains(t, err.Error(), "语法错误")
+		}
+	}
+}
+
 func TestErrorContext_ShowsCodeAndPointer(t *testing.T) {
 	vm := NewVM()
 	// 使用一个确实会产生错误的表达式

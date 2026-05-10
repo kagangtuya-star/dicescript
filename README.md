@@ -82,10 +82,6 @@ https://sealdice.github.io/dicescript/
 
 [更新记录](./docs/CHANGELOG.md)
 
-## TODO
-
-* computed 的repr格式无法读入
-
 ## 开发
 
 如果修改了文法，使用这个工具重新生成:

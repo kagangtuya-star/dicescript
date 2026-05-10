@@ -940,6 +940,36 @@ func TestComputed2(t *testing.T) {
 	}
 }
 
+func TestComputedLiteral(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("a = &(1+2); typeId(&a)")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(IntType(VMTypeComputedValue))))
+	}
+
+	vm = NewVM()
+	err = vm.Run("a = &(1+2); a")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(3)))
+	}
+}
+
+func TestComputedLiteralRoundTripByRepr(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("a = &(1+2); repr(loadRaw('a'))")
+	if assert.NoError(t, err) {
+		repr, ok := vm.Ret.ReadString()
+		if assert.True(t, ok) {
+			assert.Equal(t, "&(1+2)", repr)
+
+			vm2 := NewVM()
+			err = vm2.Run("b = " + repr + "; typeId(&b)")
+			if assert.NoError(t, err) {
+				assert.True(t, valueEqual(vm2.Ret, ni(IntType(VMTypeComputedValue))))
+			}
+		}
+	}
+}
 func TestFunction(t *testing.T) {
 	vm := NewVM()
 	err := vm.Run("func a() { 123 }; a()")

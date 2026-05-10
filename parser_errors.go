@@ -50,20 +50,25 @@ var errMsgs = map[string]bilingualMsg{
 	"syntax":          {"语法错误", "Syntax error"},
 }
 
-func init() {
-	// 注册错误格式化钩子
-	ErrorFormatter = formatFriendlyError
-}
-
 // SetParseErrorLanguage 设置解析错误消息的语言
 func SetParseErrorLanguage(lang int) {
 	parseErrorLanguage = lang
 }
 
+func parseErrorFormatterOption(lang int) option {
+	return noMatchErrorFormatter(func(pos position, input []byte, expected []string) error {
+		return formatFriendlyErrorForLanguage(lang, pos, input, expected)
+	})
+}
+
 // formatFriendlyError 生成友好的错误消息
 func formatFriendlyError(pos position, input []byte, expected []string) error {
+	return formatFriendlyErrorForLanguage(parseErrorLanguage, pos, input, expected)
+}
+
+func formatFriendlyErrorForLanguage(lang int, pos position, input []byte, expected []string) error {
 	if len(input) == 0 {
-		return fmtErr(pos, input, errMsgs["empty"], 0)
+		return fmtErr(lang, pos, input, errMsgs["empty"], 0)
 	}
 
 	var char rune
@@ -115,15 +120,15 @@ func formatFriendlyError(pos position, input []byte, expected []string) error {
 		msg = errMsgs["syntax"]
 	}
 
-	return fmtErr(pos, input, msg, fmtChar)
+	return fmtErr(lang, pos, input, msg, fmtChar)
 }
 
 // fmtErr 格式化错误输出
-func fmtErr(pos position, input []byte, msg bilingualMsg, char rune) error {
+func fmtErr(lang int, pos position, input []byte, msg bilingualMsg, char rune) error {
 	var sb strings.Builder
 
 	// 标题
-	switch parseErrorLanguage {
+	switch lang {
 	case ParseErrorLanguageChinese:
 		sb.WriteString("语法错误\n")
 	case ParseErrorLanguageEnglish:
@@ -156,7 +161,7 @@ func fmtErr(pos position, input []byte, msg bilingualMsg, char rune) error {
 	}
 
 	// 位置和消息
-	switch parseErrorLanguage {
+	switch lang {
 	case ParseErrorLanguageChinese:
 		sb.WriteString(fmt.Sprintf("  位置 %d:%d - %s", pos.line, pos.col, cn))
 	case ParseErrorLanguageEnglish:

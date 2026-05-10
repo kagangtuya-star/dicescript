@@ -110,6 +110,28 @@ func TestStSetCompute(t *testing.T) {
 	assert.Equal(t, index, 2)
 }
 
+func TestStSetComputeReprRoundTrip(t *testing.T) {
+	vm := NewVM()
+	var repr string
+
+	vm.Config.CallbackSt = func(_type string, name string, val *VMValue, extra *VMValue, op string, detail string) {
+		assert.Equal(t, "set", _type)
+		assert.Equal(t, "Skill", name)
+		repr = val.ToRepr()
+	}
+
+	err := vm.Run(`^st&Skill=1+2`)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "&(1+2)", repr)
+
+		vm2 := NewVM()
+		err = vm2.Run("a = " + repr + "; typeId(&a)")
+		if assert.NoError(t, err) {
+			assert.True(t, valueEqual(vm2.Ret, ni(IntType(VMTypeComputedValue))))
+		}
+	}
+}
+
 func TestStSetComputeNamespaced(t *testing.T) {
 	vm := NewVM()
 	items := []checkItem{

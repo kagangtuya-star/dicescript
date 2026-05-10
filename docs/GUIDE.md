@@ -371,6 +371,13 @@ null代表空值。
 &a.x = 5
 ```
 
+也可以直接写 computed 字面量：
+
+```
+a = &(1d6 + 2)
+repr(loadRaw('a')) // => &(1d6 + 2)
+```
+
 这里的this是指该变量内部的一个空间，如果你有其他编程语言经验，可以理解为函数的内部变量。
 
 > this的解释请参考：https://www.runoob.com/js/js-this.html ，在DiceScript中this的用法基本与JS相同。
@@ -633,6 +640,7 @@ bool(obj) // 将对象二值化，结果为0或1
 repr(obj) // 将对象转化为供解释器读取的形式，类似于python的同名函数
 load(name) // 读取变量名为name的变量，拿到其值
 loadRaw(name) // 读取变量名为name的变量，与load()不同，如果该变量是计算类型，那么不会返回计算后结果
+           // 对 computed，repr(loadRaw(name)) 现在会得到可再次读入的 &(expr) 形式
 
 repr(obj) // 将对象转化为供解释器读取的形式
 load(name) // 根据给出的名字，获取对象。 load('a') == a
