@@ -146,6 +146,54 @@ func funcDictLen(ctx *Context, this *VMValue, params []*VMValue) *VMValue {
 	return NewIntVal(IntType(d.Dict.Length()))
 }
 
+func funcDictHas(ctx *Context, this *VMValue, params []*VMValue) *VMValue {
+	d := this.MustReadDictData()
+	key, err := params[0].AsDictKey()
+	if err != nil {
+		ctx.Error = err
+		return nil
+	}
+
+	_, ok := d.Dict.Load(key)
+	return boolToVMValue(ok)
+}
+
+func funcDictGet(ctx *Context, this *VMValue, params []*VMValue) *VMValue {
+	d := this.MustReadDictData()
+	key, err := params[0].AsDictKey()
+	if err != nil {
+		ctx.Error = err
+		return nil
+	}
+
+	val, ok := d.Dict.Load(key)
+	if ok {
+		return ctx.solveComputedValue(val, false, nil)
+	}
+	if len(params) > 1 {
+		return params[1]
+	}
+	return NewNullVal()
+}
+
+func funcDictGetRaw(ctx *Context, this *VMValue, params []*VMValue) *VMValue {
+	d := this.MustReadDictData()
+	key, err := params[0].AsDictKey()
+	if err != nil {
+		ctx.Error = err
+		return nil
+	}
+
+	val, ok := d.Dict.Load(key)
+	if ok {
+		return val
+	}
+	if len(params) > 1 {
+		return params[1]
+	}
+	return NewNullVal()
+}
+
 var builtinProto = map[VMValueType]*VMDictValue{
 	VMTypeComputedValue: NewDictValWithArrayMust(
 		NewStrVal("compute"), nnf(&ndf{"Computed.compute", []string{}, nil, nil, nil}),
@@ -167,6 +215,9 @@ var builtinProto = map[VMValueType]*VMDictValue{
 		NewStrVal("values"), nnf(&ndf{"Dict.values", []string{}, nil, nil, funcDictValues}),
 		NewStrVal("items"), nnf(&ndf{"Dict.items", []string{}, nil, nil, funcDictItems}),
 		NewStrVal("len"), nnf(&ndf{"Dict.len", []string{}, nil, nil, funcDictLen}),
+		NewStrVal("has"), nnf(&ndf{"Dict.has", []string{"key"}, nil, nil, funcDictHas}),
+		NewStrVal("get"), nnf(&ndf{"Dict.get", []string{"key", "default"}, []*VMValue{nil, NewNullVal()}, nil, nil}),
+		NewStrVal("getRaw"), nnf(&ndf{"Dict.getRaw", []string{"key", "default"}, []*VMValue{nil, NewNullVal()}, nil, funcDictGetRaw}),
 	),
 }
 
@@ -201,4 +252,12 @@ func _init2() bool {
 	return false
 }
 
+func _init3() bool {
+	// 因循环引用问题无法在上面声明
+	funcGet := nnf(&ndf{"Dict.get", []string{"key", "default"}, []*VMValue{nil, NewNullVal()}, nil, funcDictGet})
+	builtinProto[VMTypeDict].Store("get", funcGet)
+	return false
+}
+
 var _ = _init2()
+var _ = _init3()

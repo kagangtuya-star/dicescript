@@ -894,6 +894,62 @@ func TestArrayMethod(t *testing.T) {
 	}
 }
 
+func TestDictMethod(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("{'a': 1}.has('a')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(1)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.has('b')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(0)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.get('a')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(1)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.get('b')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, NewNullVal()))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.get('b', 9)")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(9)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("a = &(1+2); {'a': &a}.get('a')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(3)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("a = &(1+2); typeId({'a': &a}.getRaw('a'))")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(IntType(VMTypeComputedValue))))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.getRaw('b')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, NewNullVal()))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'__proto__': {'x': 1}}.has('x')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(0)))
+	}
+}
+
 func TestReturn(t *testing.T) {
 	vm := NewVM()
 	err := vm.Run("func test(n) { return 1; 2 }; test(11)")
