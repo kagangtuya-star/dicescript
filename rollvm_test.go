@@ -970,6 +970,30 @@ func TestComputedLiteralRoundTripByRepr(t *testing.T) {
 		}
 	}
 }
+
+func TestComputedMemberAccess(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("a = &(1+2); obj = {'a': &a, 'x': {'a': &a}}; arr = [&a]")
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	cases := []string{
+		"a",
+		"obj.a",
+		`obj["a"]`,
+		"arr[0]",
+		"obj.x.a",
+	}
+
+	for _, expr := range cases {
+		err = vm.Run(expr)
+		if assert.NoError(t, err, expr) {
+			assert.True(t, valueEqual(vm.Ret, ni(3)), expr)
+		}
+	}
+}
+
 func TestFunction(t *testing.T) {
 	vm := NewVM()
 	err := vm.Run("func a() { 123 }; a()")

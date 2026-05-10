@@ -243,27 +243,33 @@ func (ctx *Context) loadInnerVar(name string) *VMValue {
 	return builtinValues[name]
 }
 
-func (ctx *Context) solveLoadPostAndComputed(name string, val *VMValue, isRaw bool, detail *BufferSpan) *VMValue {
+func (ctx *Context) solveComputedValue(val *VMValue, isRaw bool, detail *BufferSpan) *VMValue {
+	if val == nil {
+		return nil
+	}
+
 	withDetail := detail != nil
 
-	// 计算真实结果
-	doCompute := func(val *VMValue) *VMValue {
-		if !isRaw && val.TypeId == VMTypeComputedValue {
-			if withDetail {
-				val = val.ComputedExecute(ctx, detail)
-			} else {
-				val = val.ComputedExecute(ctx, &BufferSpan{})
-			}
-			if ctx.Error != nil {
-				return nil
-			}
-		}
-
-		// 追加计算结果到detail
+	if !isRaw && val.TypeId == VMTypeComputedValue {
 		if withDetail {
-			detail.Ret = val
+			val = val.ComputedExecute(ctx, detail)
+		} else {
+			val = val.ComputedExecute(ctx, &BufferSpan{})
 		}
-		return val
+		if ctx.Error != nil {
+			return nil
+		}
+	}
+
+	if withDetail {
+		detail.Ret = val
+	}
+	return val
+}
+
+func (ctx *Context) solveLoadPostAndComputed(name string, val *VMValue, isRaw bool, detail *BufferSpan) *VMValue {
+	doCompute := func(val *VMValue) *VMValue {
+		return ctx.solveComputedValue(val, isRaw, detail)
 	}
 
 	if ctx.Config.HookValueLoadPost != nil {
@@ -293,13 +299,7 @@ func (ctx *Context) LoadNameGlobalWithDetail(name string, isRaw bool, detail *Bu
 	if loadFunc != nil {
 		val := loadFunc(name)
 		if val != nil {
-			if !isRaw && val.TypeId == VMTypeComputedValue {
-				val = val.ComputedExecute(ctx, detail)
-				if ctx.Error != nil {
-					return nil
-				}
-			}
-			return val
+			return ctx.solveComputedValue(val, isRaw, detail)
 		}
 	}
 	// else {
@@ -1100,8 +1100,8 @@ func (v *VMValue) AttrSet(ctx *Context, name string, val *VMValue) *VMValue {
 	return nil
 }
 
-// AttrGet 如果返回nil 说明不支持 . 取属性
-func (v *VMValue) AttrGet(ctx *Context, name string) *VMValue {
+// attrGetRaw 按普通成员查找规则取值，但不自动展开 computed。
+func (v *VMValue) attrGetRaw(ctx *Context, name string, isRaw bool) *VMValue {
 	switch v.TypeId {
 	case VMTypeComputedValue:
 		cd, _ := v.ReadComputed()
@@ -1145,13 +1145,13 @@ func (v *VMValue) AttrGet(ctx *Context, name string) *VMValue {
 		}
 	case vmTypeGlobal:
 		// 加载全局变量
-		ret := ctx.LoadNameGlobal(name, false)
+		ret := ctx.LoadNameGlobal(name, isRaw)
 		if ret == nil {
 			ret = NewNullVal()
 		}
 		return ret
 	case vmTypeLocal:
-		ret := ctx.LoadNameLocal(name, false)
+		ret := ctx.LoadNameLocal(name, isRaw)
 		if ret == nil {
 			ret = NewNullVal()
 		}
@@ -1181,7 +1181,12 @@ func (v *VMValue) AttrGet(ctx *Context, name string) *VMValue {
 	return NewNullVal()
 }
 
-func (v *VMValue) ItemGet(ctx *Context, index *VMValue) *VMValue {
+// AttrGet 如果返回nil 说明不支持 . 取属性
+func (v *VMValue) AttrGet(ctx *Context, name string) *VMValue {
+	return ctx.solveComputedValue(v.attrGetRaw(ctx, name, false), false, nil)
+}
+
+func (v *VMValue) itemGetRaw(ctx *Context, index *VMValue) *VMValue {
 	switch v.TypeId {
 	case VMTypeArray:
 		if index.TypeId != VMTypeInt {
@@ -1221,6 +1226,10 @@ func (v *VMValue) ItemGet(ctx *Context, index *VMValue) *VMValue {
 		ctx.Error = errors.New("此类型无法取下标")
 	}
 	return nil
+}
+
+func (v *VMValue) ItemGet(ctx *Context, index *VMValue) *VMValue {
+	return ctx.solveComputedValue(v.itemGetRaw(ctx, index), false, nil)
 }
 
 func (v *VMValue) ItemSet(ctx *Context, index *VMValue, val *VMValue) bool {
