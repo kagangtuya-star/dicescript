@@ -129,6 +129,43 @@ func TestNativeFunctionLoadRaw(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestNativeFunctionLoadRawAttr(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("a = &(1+2); obj = {'a': &a, 'x': {'a': &a}}; typeId(loadRawAttr(obj, 'a'))")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(IntType(VMTypeComputedValue))))
+	}
+
+	vm = NewVM()
+	err = vm.Run("a = &(1+2); obj = {'a': &a, 'x': {'a': &a}}; repr(loadRawAttr(loadRawItem(obj, 'x'), 'a'))")
+	if assert.NoError(t, err) {
+		repr, ok := vm.Ret.ReadString()
+		if assert.True(t, ok) {
+			assert.Equal(t, "&(1+2)", repr)
+		}
+	}
+
+	vm = NewVM()
+	err = vm.Run("a = &(1+2); obj = {'a': &a}; obj.a")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(3)))
+	}
+}
+
+func TestNativeFunctionLoadRawItem(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("a = &(1+2); obj = {'a': &a}; typeId(loadRawItem(obj, 'a'))")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(IntType(VMTypeComputedValue))))
+	}
+
+	vm = NewVM()
+	err = vm.Run("a = &(1+2); arr = [&a]; typeId(loadRawItem(arr, 0))")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(IntType(VMTypeComputedValue))))
+	}
+}
+
 func TestNativeFunctionAbs(t *testing.T) {
 	vm := NewVM()
 	assert.True(t, valueEqual(funcAbs(vm, nil, []*VMValue{ni(-5)}), ni(5)))

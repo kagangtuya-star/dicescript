@@ -442,6 +442,23 @@ func TestNativeObject(t *testing.T) {
 	assert.Equal(t, ret.ToString(), "['x']")
 }
 
+func TestNativeObjectComputedRead(t *testing.T) {
+	vm := NewVM()
+	slot := NewComputedVal("1+2")
+	od := &NativeObjectData{
+		Name: "obj1",
+		AttrGet: func(ctx *Context, name string) *VMValue {
+			return slot
+		},
+		ItemGet: func(ctx *Context, index *VMValue) *VMValue {
+			return slot
+		},
+	}
+	v := NewNativeObjectVal(od)
+	assert.True(t, valueEqual(v.AttrGet(vm, "a"), ni(3)))
+	assert.True(t, valueEqual(v.ItemGet(vm, ni(0)), ni(3)))
+}
+
 func TestAsBool(t *testing.T) {
 	assert.Equal(t, ni(1).AsBool(), true)
 	assert.Equal(t, ni(0).AsBool(), false)

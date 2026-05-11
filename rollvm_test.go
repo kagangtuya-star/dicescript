@@ -894,6 +894,62 @@ func TestArrayMethod(t *testing.T) {
 	}
 }
 
+func TestDictMethod(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("{'a': 1}.has('a')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(1)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.has('b')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(0)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.get('a')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(1)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.get('b')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, NewNullVal()))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.get('b', 9)")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(9)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("a = &(1+2); {'a': &a}.get('a')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(3)))
+	}
+
+	vm = NewVM()
+	err = vm.Run("a = &(1+2); typeId({'a': &a}.getRaw('a'))")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(IntType(VMTypeComputedValue))))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'a': 1}.getRaw('b')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, NewNullVal()))
+	}
+
+	vm = NewVM()
+	err = vm.Run("{'__proto__': {'x': 1}}.has('x')")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(0)))
+	}
+}
+
 func TestReturn(t *testing.T) {
 	vm := NewVM()
 	err := vm.Run("func test(n) { return 1; 2 }; test(11)")
@@ -937,6 +993,60 @@ func TestComputed2(t *testing.T) {
 	err = vm.Run("&a.x")
 	if assert.NoError(t, err) {
 		assert.True(t, valueEqual(vm.Ret, ni(2)))
+	}
+}
+
+func TestComputedLiteral(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("a = &(1+2); typeId(&a)")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(IntType(VMTypeComputedValue))))
+	}
+
+	vm = NewVM()
+	err = vm.Run("a = &(1+2); a")
+	if assert.NoError(t, err) {
+		assert.True(t, valueEqual(vm.Ret, ni(3)))
+	}
+}
+
+func TestComputedLiteralRoundTripByRepr(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("a = &(1+2); repr(loadRaw('a'))")
+	if assert.NoError(t, err) {
+		repr, ok := vm.Ret.ReadString()
+		if assert.True(t, ok) {
+			assert.Equal(t, "&(1+2)", repr)
+
+			vm2 := NewVM()
+			err = vm2.Run("b = " + repr + "; typeId(&b)")
+			if assert.NoError(t, err) {
+				assert.True(t, valueEqual(vm2.Ret, ni(IntType(VMTypeComputedValue))))
+			}
+		}
+	}
+}
+
+func TestComputedMemberAccess(t *testing.T) {
+	vm := NewVM()
+	err := vm.Run("a = &(1+2); obj = {'a': &a, 'x': {'a': &a}}; arr = [&a]")
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	cases := []string{
+		"a",
+		"obj.a",
+		`obj["a"]`,
+		"arr[0]",
+		"obj.x.a",
+	}
+
+	for _, expr := range cases {
+		err = vm.Run(expr)
+		if assert.NoError(t, err, expr) {
+			assert.True(t, valueEqual(vm.Ret, ni(3)), expr)
+		}
 	}
 }
 

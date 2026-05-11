@@ -66,3 +66,44 @@ func TestTypesMethodDictLen(t *testing.T) {
 	v := funcDictLen(nil, d.V(), nil)
 	assert.Equal(t, v.MustReadInt(), IntType(2))
 }
+
+func TestTypesMethodDictHas(t *testing.T) {
+	vm := NewVM()
+	d := NewDictValWithArrayMust(ns("a"), ni(1), ns("b"), ni(2))
+
+	v := funcDictHas(vm, d.V(), []*VMValue{ns("a")})
+	assert.True(t, valueEqual(v, ni(1)))
+
+	v = funcDictHas(vm, d.V(), []*VMValue{ns("c")})
+	assert.True(t, valueEqual(v, ni(0)))
+}
+
+func TestTypesMethodDictGet(t *testing.T) {
+	vm := NewVM()
+	c := NewComputedValRaw(&ComputedData{Expr: "1 + 2"})
+	d := NewDictValWithArrayMust(ns("a"), ni(1), ns("c"), c)
+
+	v := funcDictGet(vm, d.V(), []*VMValue{ns("a"), ni(9)})
+	assert.True(t, valueEqual(v, ni(1)))
+
+	v = funcDictGet(vm, d.V(), []*VMValue{ns("c"), ni(9)})
+	assert.True(t, valueEqual(v, ni(3)))
+
+	v = funcDictGet(vm, d.V(), []*VMValue{ns("missing"), ni(9)})
+	assert.True(t, valueEqual(v, ni(9)))
+}
+
+func TestTypesMethodDictGetRaw(t *testing.T) {
+	vm := NewVM()
+	c := NewComputedValRaw(&ComputedData{Expr: "1 + 2"})
+	d := NewDictValWithArrayMust(ns("a"), ni(1), ns("c"), c)
+
+	v := funcDictGetRaw(vm, d.V(), []*VMValue{ns("a"), ni(9)})
+	assert.True(t, valueEqual(v, ni(1)))
+
+	v = funcDictGetRaw(vm, d.V(), []*VMValue{ns("c"), ni(9)})
+	assert.Equal(t, VMTypeComputedValue, v.TypeId)
+
+	v = funcDictGetRaw(vm, d.V(), []*VMValue{ns("missing"), ni(9)})
+	assert.True(t, valueEqual(v, ni(9)))
+}

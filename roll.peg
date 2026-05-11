@@ -319,11 +319,13 @@ value_id_without_colon <- id:identifierWithoutColon sp { c.data.WriteCode(typeLo
 
 value_array_range <- '[' sp exprRoot ".." sp exprRoot ']' sp { c.data.AddOp(typePushRange) }
 value_array <- '[' sp { c.data.CounterPush(); c.data.CounterAdd(1) } exprRoot (',' sp exprRoot {c.data.CounterAdd(1)} )* ']' sp { c.data.PushArray(c.data.CounterPop()) }
+value_computed <- '&' parenOpen { c.data.CodePush(p.pt.offset) } text:< exprRoot > parenClose { c.data.AddStoreComputedOnStack(text.(string)) }
 
 value <- "true" sp { c.data.PushIntNumber("1"); }
        / "false" sp { c.data.PushIntNumber("0"); }
        / "null" sp { c.data.PushNull() }
        / "this" sp { c.data.PushThis() } item_get attr_get
+       / &value_computed value_computed attr_get
        / '&' id:identifier sp { c.data.WriteCode(typeLoadNameRaw, id.(string)); } attr_get
 
        / float

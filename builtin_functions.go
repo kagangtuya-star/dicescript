@@ -152,6 +152,32 @@ func funcLoadRaw(ctx *Context, this *VMValue, params []*VMValue) *VMValue {
 	return funcLoadBase(ctx, this, params, true)
 }
 
+func funcLoadRawAttr(ctx *Context, this *VMValue, params []*VMValue) *VMValue {
+	obj := params[0]
+	attr := params[1]
+	if attr.TypeId != VMTypeString {
+		ctx.Error = errors.New("(loadRawAttr)类型错误: 参数2类型必须为str")
+		return nil
+	}
+
+	ret := obj.attrGetRaw(ctx, attr.Value.(string), true)
+	if ctx.Error != nil {
+		return nil
+	}
+	return ret
+}
+
+func funcLoadRawItem(ctx *Context, this *VMValue, params []*VMValue) *VMValue {
+	obj := params[0]
+	index := params[1]
+
+	ret := obj.itemGetRaw(ctx, index)
+	if ctx.Error != nil {
+		return nil
+	}
+	return ret
+}
+
 func funcStore(ctx *Context, this *VMValue, params []*VMValue) *VMValue {
 	name := params[0]
 	if name.TypeId != VMTypeString {
@@ -204,10 +230,12 @@ var builtinValues = map[string]*VMValue{
 	"toStr":   nnf(&ndf{"toStr", []string{"value"}, nil, nil, funcToStr}),
 	"toBool":  nnf(&ndf{"toBool", []string{"value"}, nil, nil, funcToBool}),
 
-	"repr":    nnf(&ndf{"repr", []string{"value"}, nil, nil, funcRepr}),
-	"load":    nnf(&ndf{"load", []string{"value"}, nil, nil, nil}),
-	"loadRaw": nnf(&ndf{"loadRaw", []string{"value"}, nil, nil, nil}),
-	"store":   nnf(&ndf{"store", []string{"name", "value"}, nil, nil, nil}),
+	"repr":        nnf(&ndf{"repr", []string{"value"}, nil, nil, funcRepr}),
+	"load":        nnf(&ndf{"load", []string{"value"}, nil, nil, nil}),
+	"loadRaw":     nnf(&ndf{"loadRaw", []string{"value"}, nil, nil, nil}),
+	"loadRawAttr": nnf(&ndf{"loadRawAttr", []string{"obj", "name"}, nil, nil, nil}),
+	"loadRawItem": nnf(&ndf{"loadRawItem", []string{"obj", "index"}, nil, nil, nil}),
+	"store":       nnf(&ndf{"store", []string{"name", "value"}, nil, nil, nil}),
 
 	// TODO: roll()
 
@@ -224,6 +252,12 @@ func _init() bool {
 
 	nfd, _ = builtinValues["loadRaw"].ReadNativeFunctionData()
 	nfd.NativeFunc = funcLoadRaw
+
+	nfd, _ = builtinValues["loadRawAttr"].ReadNativeFunctionData()
+	nfd.NativeFunc = funcLoadRawAttr
+
+	nfd, _ = builtinValues["loadRawItem"].ReadNativeFunctionData()
+	nfd.NativeFunc = funcLoadRawItem
 
 	nfd, _ = builtinValues["store"].ReadNativeFunctionData()
 	nfd.NativeFunc = funcStore

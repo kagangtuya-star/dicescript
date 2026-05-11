@@ -371,6 +371,36 @@ null代表空值。
 &a.x = 5
 ```
 
+也可以直接写 computed 字面量：
+
+```
+a = &(1d6 + 2)
+repr(loadRaw('a')) // => &(1d6 + 2)
+```
+
+普通读取会自动执行 computed，不只变量名如此，成员读取现在也是一致的：
+
+```
+a = &(1d6 + 2)
+obj = {'a': &a}
+arr = [&a]
+
+a        // 执行 computed
+obj.a    // 也会执行 computed
+obj['a'] // 也会执行 computed
+arr[0]   // 也会执行 computed
+```
+
+如果你需要从字典、数组或对象里拿到“公式本体”，而不是计算结果，可以使用新的 raw 读取 API：
+
+```
+loadRawAttr(obj, 'a') // 读取 obj.a，但不自动执行 computed
+loadRawItem(obj, 'a') // 读取 obj['a']，但不自动执行 computed
+loadRawItem(arr, 0)   // 读取 arr[0]，但不自动执行 computed
+
+repr(loadRawAttr(obj, 'a')) // => &(1d6 + 2)
+```
+
 这里的this是指该变量内部的一个空间，如果你有其他编程语言经验，可以理解为函数的内部变量。
 
 > this的解释请参考：https://www.runoob.com/js/js-this.html ，在DiceScript中this的用法基本与JS相同。
@@ -468,6 +498,24 @@ d['v4'] = 5
 ```
 
 请特别注意，字典的键必须为字符串，实际操作中也允许数字类型，但是会自动转换为字符串。
+
+字典函数：
+```
+d = {'v1': 1, 'v2': &(1d6 + 2)}
+
+d.len() // 键值对数量，2
+d.keys() // 所有键，如 ['v1', 'v2']
+d.values() // 所有值，如 [1, &(1d6 + 2)]，其中 computed 会在后续使用时正常求值
+d.items() // 所有键值对，如 [['v1', 1], ['v2', &(1d6 + 2)]]
+d.has('v1') // 是否存在该键，1
+d.has('v3') // 不存在时返回 0
+d.get('v1') // 读取键对应的值，1
+d.get('v3', 100) // 键不存在时返回默认值，100
+d.getRaw('v2') // 读取原始值，不自动执行 computed
+repr(d.getRaw('v2')) // => &(1d6 + 2)
+```
+
+注意：这些方法只检查当前字典本身，不会沿 `__proto__` 继续查找。
 
 
 #### 函数
@@ -633,6 +681,9 @@ bool(obj) // 将对象二值化，结果为0或1
 repr(obj) // 将对象转化为供解释器读取的形式，类似于python的同名函数
 load(name) // 读取变量名为name的变量，拿到其值
 loadRaw(name) // 读取变量名为name的变量，与load()不同，如果该变量是计算类型，那么不会返回计算后结果
+           // 对 computed，repr(loadRaw(name)) 现在会得到可再次读入的 &(expr) 形式
+loadRawAttr(obj, name) // 读取 obj.name，但不自动执行 computed。name 必须是字符串
+loadRawItem(obj, key) // 读取 obj[key]，但不自动执行 computed
 
 repr(obj) // 将对象转化为供解释器读取的形式
 load(name) // 根据给出的名字，获取对象。 load('a') == a
